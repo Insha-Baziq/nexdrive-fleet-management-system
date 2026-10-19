@@ -97,7 +97,7 @@ try {
       body: { name: user.name, email: user.email, password },
       headers: new Headers({ origin }),
     });
-    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = saved.rows[0].id;
   }
   const [admin, fleet, manager, driver, unassignedDriver, otherAdmin] = await Promise.all(users.map((user) => signIn(user.email)));
@@ -155,8 +155,10 @@ try {
   assert.equal((await request(`/api/drivers/${siblingDriverId}/documents`, "GET", driver)).status, 404, "Driver cannot list another Driver record");
   assert.equal((await request(`/api/drivers/${siblingDriverId}/documents/${siblingId}/content`, "GET", driver)).status, 404, "Driver cannot open another Driver's document");
   assert.equal((await request(`${driverDocsPath}/${siblingId}/content`, "GET", driver)).status, 404, "altered document IDs cannot disclose another Driver's file");
-  assert.equal((await request(driverDocsPath, "GET", manager)).status, 403, "Manager cannot read driver paperwork");
-  assert.equal((await request(`${driverDocsPath}/${ownLicenceId}/content`, "GET", manager)).status, 403, "Manager cannot open driver paperwork");
+  assert.equal((await request(driverDocsPath, "GET", manager)).status, 200, "Manager can list paperwork in their tenant");
+  const managerContent = await request(`${driverDocsPath}/${ownLicenceId}/content`, "GET", manager);
+  assert.equal(managerContent.status, 200, "Manager can open paperwork in their tenant");
+  assert.deepEqual(managerContent.data, pdf);
   assert.equal((await request(driverDocsPath, "POST", driver, { name: "No", category: "driving_licence", fileName: "no.pdf", fileSize: pdf.length })).status, 403, "Driver self-upload remains disabled");
 
   const vehicleList = await request(vehicleDocPath, "GET", driver);

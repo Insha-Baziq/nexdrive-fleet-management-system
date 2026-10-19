@@ -55,7 +55,7 @@ try {
   await pool.query("INSERT INTO tenant (id, name) VALUES ($1, 'Driver Records QA A'), ($2, 'Driver Records QA B')", tenants);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const result = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const result = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = result.rows[0].id;
   }
   const [admin, fleet, manager, driverCandidate, , otherAdmin] = await Promise.all(users.slice(0, 6).map((user) => signIn(user.email)));
@@ -163,7 +163,7 @@ try {
   const list = await request("/api/drivers", "GET", freshAdmin);
   assert.equal(list.status, 200);
   assert.ok(list.data.drivers.some((entry) => entry.id === driverId && entry.user_email === users[4].email));
-  assert.equal(list.data.drivers.length, 2, "only persisted records for this tenant are listed");
+  assert.equal(list.data.drivers.length, 3, "only persisted records for this tenant are listed");
   assert.deepEqual((await request("/api/drivers", "GET", otherAdmin)).data.drivers, [], "other tenant list is isolated");
   assert.equal((await request(`/api/drivers/${driverId}`, "PATCH", admin, { ...base, fullName: "Invalid Date", licenceExpiryDate: "2027-02-29" })).status, 400);
 

@@ -32,7 +32,7 @@ const failedRequester = failedDelivery.request;
 async function addUser(email, name, role, tenant) {
   const created = await auth.api.signUpEmail({ body: { name, email, password }, headers: new Headers({ origin }) });
   assert.ok(created?.user?.id);
-  await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE id=$3', [tenant, role, created.user.id]);
+  await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE id=$3', [tenant, role, created.user.id]);
   return created.user.id;
 }
 

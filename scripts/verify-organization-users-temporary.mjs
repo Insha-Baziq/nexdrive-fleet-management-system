@@ -82,7 +82,7 @@ try {
   assert.deepEqual(otherScoped.data.users.map((user) => user.email), [otherAdminEmail]);
 
   const presence = await request("/api/presence", "POST", {}, admin);
-  assert.equal(presence.status, 200);
+  assert.equal(presence.status, 200, JSON.stringify(presence.data));
   const present = await request("/api/organization-users", "GET", undefined, admin);
   assert.ok(present.data.users.find((user) => user.email === adminEmail).lastSeenAt);
 
@@ -174,6 +174,9 @@ try {
   assert.equal((await request(`/api/organization-users/${joinedUsers.data.users.find((user) => user.email === adminEmail).id}`, "PATCH", { disabled: true }, admin)).status, 400);
   const suspended = await request(`/api/organization-users/${joinedMember.id}`, "PATCH", { disabled: true }, admin);
   assert.equal(suspended.status, 200);
+  const endedSession = await request("/api/auth/get-session", "GET", undefined, member);
+  assert.equal(endedSession.status, 200);
+  assert.equal(endedSession.data, null, "suspending the last organization membership ends active auth sessions");
   assert.equal((await request("/api/presence", "POST", {}, member)).status, 401);
   assert.equal((await request("/api/organization-users", "GET", undefined, member)).status, 401);
   const blockedSignIn = await request("/api/auth/sign-in/email", "POST", { email: memberEmail, password });

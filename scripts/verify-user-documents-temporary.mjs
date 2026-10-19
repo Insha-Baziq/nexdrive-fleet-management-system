@@ -32,7 +32,7 @@ async function addUser(email, tenant) {
     headers: new Headers({ origin, "x-nexdrive-onboarding-key": process.env.BETTER_AUTH_SECRET }),
   });
   assert.ok(created?.user?.id);
-  await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=\'administrator\' WHERE id=$2', [tenant, created.user.id]);
+  await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=\'administrator\', "emailVerified"=true WHERE id=$2', [tenant, created.user.id]);
   return created.user.id;
 }
 

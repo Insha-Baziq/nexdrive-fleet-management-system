@@ -21,7 +21,7 @@ const invitation = organizationInvitationEmail({
   to: "controlled@example.invalid",
   organizationName: "<Client & Co>",
   role: "driver",
-  invitationUrl: "https://nexdrive.example/signup/join?code=one-time-code",
+  invitationUrl: "https://nexdrive.example/login?invitation=one-time-code",
   expirationDays: 7,
 });
 await sender(invitation);
@@ -63,8 +63,8 @@ try {
 }
 
 const inviteUrl = new URL(buildInvitationUrl("ONE-TIME-CODE"));
-assert.equal(inviteUrl.pathname, "/signup/join");
-assert.equal(inviteUrl.searchParams.get("code"), "ONE-TIME-CODE");
+assert.equal(inviteUrl.pathname, "/login");
+assert.equal(inviteUrl.searchParams.get("invitation"), "ONE-TIME-CODE");
 assert.equal(inviteUrl.origin, new URL(process.env.INVITATION_PUBLIC_URL || "https://nexdrive-three.vercel.app").origin);
 const savedPublicUrl = process.env.INVITATION_PUBLIC_URL;
 const savedAuthUrl = process.env.BETTER_AUTH_URL;

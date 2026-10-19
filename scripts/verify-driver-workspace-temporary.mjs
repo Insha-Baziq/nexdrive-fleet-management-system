@@ -93,7 +93,7 @@ try {
       headers: new Headers({ origin }),
     });
     const result = await pool.query(
-      'UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id',
+      'UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id',
       [user.tenant, user.role, user.email],
     );
     user.id = result.rows[0].id;

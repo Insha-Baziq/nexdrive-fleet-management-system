@@ -96,7 +96,7 @@ try {
     [tenantA, "Mileage Verification A", tenantB, "Mileage Verification B"]);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    await pool.query('update "user" set "tenantId" = $1, "appRole" = $2 where email = $3',
+    await pool.query('update "user" set "tenantId" = $1, "appRole" = $2, "emailVerified" = true where email = $3',
       [user.tenant, user.role, user.email]);
   }
 

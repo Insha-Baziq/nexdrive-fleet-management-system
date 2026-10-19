@@ -72,6 +72,35 @@ function createAuth(resetEmailSender?: (message: OutgoingEmail) => Promise<void>
             message: "Use NexDrive onboarding to create an account.",
           });
         }
+
+        // Membership suspension is organization-scoped. Keep accounts that have
+        // no memberships eligible for the welcome/onboarding flow, and keep
+        // multi-organization accounts eligible when another membership is active.
+        if (ctx.path === "/sign-in/email") {
+          const body = ctx.body as { email?: unknown } | undefined;
+          const email = typeof body?.email === "string" ? body.email.trim() : "";
+          if (email) {
+            const membershipState = await pool.query<{ hasMembership: boolean; hasActiveMembership: boolean }>(
+              `SELECT
+                 EXISTS (
+                   SELECT 1 FROM organization_membership m JOIN "user" u ON u.id=m.user_id
+                   WHERE lower(u.email)=lower($1)
+                 ) AS "hasMembership",
+                 EXISTS (
+                   SELECT 1 FROM organization_membership m JOIN "user" u ON u.id=m.user_id
+                   WHERE lower(u.email)=lower($1) AND m.disabled_at IS NULL
+                 ) AS "hasActiveMembership"`,
+              [email],
+            );
+            const state = membershipState.rows[0];
+            if (state?.hasMembership && !state.hasActiveMembership) {
+              throw new APIError("FORBIDDEN", {
+                code: "NO_ACTIVE_ORGANIZATION_MEMBERSHIP",
+                message: "Sign-in is unavailable for this account.",
+              });
+            }
+          }
+        }
       }),
     },
     user: {

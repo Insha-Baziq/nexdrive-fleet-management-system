@@ -86,7 +86,7 @@ try {
     [tenantA, `Ticket 27 Assigned ${runId}`, tenantB, `Ticket 27 Other ${runId}`]);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    await pool.query('UPDATE "user" SET "tenantId" = $1, "appRole" = $2 WHERE email = $3',
+    await pool.query('UPDATE "user" SET "tenantId" = $1, "appRole" = $2, "emailVerified" = true WHERE email = $3',
       [user.tenantId, user.role, user.email]);
   }
   const accountRows = await pool.query('SELECT id, email FROM "user" WHERE email = ANY($1::text[])', [emails]);

@@ -80,6 +80,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         'UPDATE organization_membership SET disabled_at=CASE WHEN $1 THEN COALESCE(disabled_at, CURRENT_TIMESTAMP) ELSE NULL END WHERE user_id=$2 AND tenant_id=$3',
         [body!.disabled, id, session.tenantId],
       );
+      if (body!.disabled) {
+        const activeMembership = await client.query(
+          'SELECT 1 FROM organization_membership WHERE user_id=$1 AND disabled_at IS NULL LIMIT 1',
+          [id],
+        );
+        if (!activeMembership.rows[0]) {
+          await client.query('DELETE FROM "session" WHERE "userId"=$1', [id]);
+        }
+      }
     }
     await client.query("COMMIT");
     return NextResponse.json(statusUpdate ? { disabled: body!.disabled } : { name, role }, { headers: { "Cache-Control": "private, no-store" } });

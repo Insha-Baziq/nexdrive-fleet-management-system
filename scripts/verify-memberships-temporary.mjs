@@ -30,7 +30,11 @@ async function request(path, method = "GET", body, jar, originOverride = origin)
 
 async function signIn(index) {
   const result = await request("/api/auth/sign-in/email", "POST", { email: emails[index], password }, jars[index]);
-  assert.equal(result.status, 200, "Fixture sign-in succeeds");
+  assert.equal(result.status, 200, `Fixture sign-in succeeds: ${JSON.stringify(result.data)}`);
+}
+
+async function markFixtureEmailVerified(index) {
+  await pool.query('UPDATE "user" SET "emailVerified"=true WHERE email=$1', [emails[index]]);
 }
 
 async function organization(index, label) {
@@ -51,6 +55,7 @@ try {
   assert.equal((await request("/api/onboarding/account", "POST", { name: "Invalid", email: emails[3], password: "short" })).status, 400);
   for (let index = 0; index < 3; index++) {
     assert.equal((await request("/api/onboarding/account", "POST", { name: `Temporary Membership User ${index}`, email: emails[index], password })).status, 201);
+    await markFixtureEmailVerified(index);
     await signIn(index);
     assert.equal((await request("/api/organizations", "GET", undefined, jars[index])).data.organizations.length, 0, "Registration creates no membership");
   }
@@ -114,6 +119,7 @@ try {
   assert.equal((await request("/api/onboarding/join-existing", "POST", { code: revoked.code }, jars[0])).status, 404);
   for (const index of [3, 4]) {
     assert.equal((await request("/api/onboarding/account", "POST", { name: `Temporary Concurrent Member ${index}`, email: emails[index], password })).status, 201);
+    await markFixtureEmailVerified(index);
     await signIn(index);
   }
   const concurrentInvite = await issue(1, "manager");

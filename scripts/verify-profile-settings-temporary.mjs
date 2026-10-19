@@ -45,9 +45,12 @@ try {
     name: "Profile Owner", email, password: oldPassword,
   });
   assert.equal(created.status, 201, JSON.stringify(created.data));
-  const userId = (await pool.query('SELECT id FROM "user" WHERE email=$1', [email])).rows[0].id;
-  const tenantId = (await pool.query('SELECT "tenantId" FROM "user" WHERE id=$1', [userId])).rows[0].tenantId;
+  const user = (await pool.query('SELECT id, "tenantId", "emailVerified" FROM "user" WHERE email=$1', [email])).rows[0];
+  const userId = user.id;
+  const tenantId = user.tenantId;
   assert.ok(tenantId);
+  assert.equal(user.emailVerified, false, "organization signup starts with email verification required");
+  await pool.query('UPDATE "user" SET "emailVerified"=true WHERE id=$1', [userId]);
   const sessionOne = await signIn(oldPassword);
   const sessionTwo = await signIn(oldPassword);
 

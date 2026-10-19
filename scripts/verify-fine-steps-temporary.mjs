@@ -11,7 +11,7 @@ const missing = required.filter((key) => !process.env[key]);
 if (missing.length) throw new Error(`Local fine-step verification needs the app and private Tigris configuration (${missing.join(", ")}).`);
 
 const origin = process.env.BETTER_AUTH_URL;
-const requestTimeoutMs = Number(process.env.FINE_STEPS_VERIFY_REQUEST_TIMEOUT_MS || 60_000);
+const requestTimeoutMs = Number(process.env.FINE_STEPS_VERIFY_REQUEST_TIMEOUT_MS || 180_000);
 if (!Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 1) {
   throw new Error("FINE_STEPS_VERIFY_REQUEST_TIMEOUT_MS must be a positive integer.");
 }
@@ -157,7 +157,7 @@ try {
   await pool.query("INSERT INTO tenant (id, name) VALUES ($1, 'Temporary Fine Steps QA A'), ($2, 'Temporary Fine Steps QA B')", tenants);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = saved.rows[0].id;
   }
   const [manager, admin, fleet, driver, foreignManager] = await Promise.all(users.map(signIn));

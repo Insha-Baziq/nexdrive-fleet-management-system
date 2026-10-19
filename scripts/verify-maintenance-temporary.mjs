@@ -116,7 +116,7 @@ try {
   ]);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const saved = await pool.query('UPDATE "user" SET "tenantId" = $1, "appRole" = $2 WHERE email = $3 RETURNING id', [user.tenant, user.role, user.email]);
+    const saved = await pool.query('UPDATE "user" SET "tenantId" = $1, "appRole" = $2, "emailVerified" = true WHERE email = $3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = saved.rows[0].id;
   }
   const [admin, fleet, manager, driver, otherAdmin] = await Promise.all([

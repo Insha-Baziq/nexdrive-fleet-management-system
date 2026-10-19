@@ -22,7 +22,7 @@ if (missingEnvironment.length) {
 const origin = new URL(process.env.BETTER_AUTH_URL);
 const localHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
 if (!localHosts.has(origin.hostname) || origin.port !== "3000") {
-  throw new Error("Final regression only targets a local NexDrive server at http://localhost:3000. No fixtures were created.");
+  throw new Error("Final regression only targets a local NexDrive server at http://127.0.0.1:3000. No fixtures were created.");
 }
 
 for (const route of ["/login", "/platform/login"]) {

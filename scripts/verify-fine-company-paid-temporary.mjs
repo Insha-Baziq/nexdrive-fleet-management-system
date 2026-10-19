@@ -99,7 +99,7 @@ try {
   await pool.query("INSERT INTO tenant (id, name) VALUES ($1, $3), ($2, $4)", [tenantA, tenantB, `Temporary Company Paid QA A ${runId}`, `Temporary Company Paid QA B ${runId}`]);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = saved.rows[0].id;
   }
   const [manager, admin, fleet, driver, foreignManager] = await Promise.all(users.map(signIn));

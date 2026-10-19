@@ -53,9 +53,11 @@ async function createOrganization(email, label) {
     password,
   });
   assert.equal(result.status, 201, JSON.stringify(result.data));
-  const tenant = await pool.query('SELECT "tenantId" FROM "user" WHERE email=$1', [email]);
+  const tenant = await pool.query('SELECT id, "tenantId", "emailVerified" FROM "user" WHERE email=$1', [email]);
   assert.ok(tenant.rows[0]?.tenantId);
+  assert.equal(tenant.rows[0].emailVerified, false, "new organization administrators begin unverified");
   tenantIds.push(tenant.rows[0].tenantId);
+  await pool.query('UPDATE "user" SET "emailVerified"=true WHERE id=$1', [tenant.rows[0].id]);
   return signIn(email);
 }
 
@@ -87,11 +89,16 @@ try {
   const otherAdmin = await createOrganization(emails.otherAdmin, "Second");
   const invitation = await request("/api/invitations", "POST", { email: emails.manager, role: "manager" }, admin);
   assert.equal(invitation.status, 201, JSON.stringify(invitation.data));
-  const joined = await request("/api/onboarding/join-new", "POST", {
-    code: invitation.data.code, name: "Company Manager", email: emails.manager, password,
+  const registered = await request("/api/onboarding/account", "POST", {
+    invitationCode: invitation.data.code, name: "Company Manager", email: emails.manager, password,
   });
-  assert.equal(joined.status, 201, JSON.stringify(joined.data));
+  assert.equal(registered.status, 201, JSON.stringify(registered.data));
+  const managerUser = await pool.query('SELECT id, "emailVerified" FROM "user" WHERE email=$1', [emails.manager]);
+  assert.equal(managerUser.rows[0]?.emailVerified, false, "invitee must verify before signing in");
+  await pool.query('UPDATE "user" SET "emailVerified"=true WHERE id=$1', [managerUser.rows[0].id]);
   const manager = await signIn(emails.manager);
+  const joined = await request("/api/onboarding/join-existing", "POST", { code: invitation.data.code }, manager);
+  assert.equal(joined.status, 200, JSON.stringify(joined.data));
 
   const adminInitial = await request("/api/settings/company", "GET", undefined, admin);
   assert.equal(adminInitial.status, 200, JSON.stringify(adminInitial.data));

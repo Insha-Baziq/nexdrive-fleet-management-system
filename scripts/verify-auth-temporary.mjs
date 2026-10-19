@@ -65,7 +65,7 @@ try {
   await pool.query("INSERT INTO tenant (id, name) VALUES ($1, 'Temporary Auth Verification A'), ($2, 'Temporary Auth Verification B')", tenants);
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const result = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const result = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = result.rows[0].id;
   }
 

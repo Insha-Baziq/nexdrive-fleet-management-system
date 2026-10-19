@@ -89,7 +89,7 @@ try {
   fixtureSetupStarted = true;
   for (const user of users) {
     await auth.api.signUpEmail({ body: { name: user.name, email: user.email, password }, headers: new Headers({ origin }) });
-    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2 WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
+    const saved = await pool.query('UPDATE "user" SET "tenantId"=$1, "appRole"=$2, "emailVerified"=true WHERE email=$3 RETURNING id', [user.tenant, user.role, user.email]);
     user.id = saved.rows[0].id;
   }
   const [admin, fleet, manager, driver, otherAdmin] = await Promise.all(users.map((user) => signIn(user.email)));
@@ -148,7 +148,11 @@ try {
   assert.equal((await request(`/api/vehicles/${vehicle}/archive`, "POST", admin)).status, 200);
   assert.equal((await request(`/api/drivers/${driverRecord}/archive`, "POST", fleet)).status, 200);
   assert.equal((await request(`/api/vehicles/${vehicle}/archive`, "POST", admin)).status, 409, "duplicate archive is explicit");
-  assert.equal((await request(`/api/drivers/${driverRecord}/restore`, "POST", manager)).status, 403, "only Administrator or Fleet Manager can restore");
+  const managerRestore = await request(`/api/drivers/${driverRecord}/restore`, "POST", manager);
+  assert.equal(managerRestore.status, 200, "Manager can restore a driver record");
+  assert.equal(managerRestore.data.driver.archived, false);
+  assert.equal((await request(`/api/drivers/${driverRecord}/archive`, "POST", manager)).status, 200,
+    "Manager can archive a driver record before the archived-record retention checks");
   assert.equal((await request(`/api/drivers/${driverRecord}/restore`, "POST", otherAdmin)).status, 404);
 
   const freshAdmin = await signIn(users[0].email);
